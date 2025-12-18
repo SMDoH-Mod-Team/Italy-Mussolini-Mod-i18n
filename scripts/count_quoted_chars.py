@@ -26,7 +26,22 @@ def find_quoted_strings(text):
     return results
 
 
-def scan_directory(path):
+def is_chinese_char(ch: str) -> bool:
+    # 检查字符是否为中文（覆盖常用的 CJK 范围）
+    cp = ord(ch)
+    return (
+        0x4E00 <= cp <= 0x9FFF or
+        0x3400 <= cp <= 0x4DBF or
+        0x20000 <= cp <= 0x2A6DF or
+        0x2A700 <= cp <= 0x2B73F or
+        0x2B740 <= cp <= 0x2B81F or
+        0x2B820 <= cp <= 0x2CEAF or
+        0xF900 <= cp <= 0xFAFF or
+        0x2F800 <= cp <= 0x2FA1F
+    )
+
+
+def scan_directory(path, only_chinese=False):
     per_file = []
     total_strings = 0
     total_chars = 0
@@ -42,7 +57,10 @@ def scan_directory(path):
                     continue
                 strs = find_quoted_strings(text)
                 count_strings = len(strs)
-                count_chars = sum(len(s) for s in strs)
+                if only_chinese:
+                    count_chars = sum(sum(1 for ch in s if is_chinese_char(ch)) for s in strs)
+                else:
+                    count_chars = sum(len(s) for s in strs)
                 per_file.append({
                     'file': os.path.relpath(fp),
                     'strings': count_strings,
@@ -67,7 +85,7 @@ def main():
         print('指定路径不是目录: ' + args.path, file=sys.stderr)
         sys.exit(2)
 
-    res = scan_directory(args.path)
+    res = scan_directory(args.path, only_chinese=args.only_chinese)
 
     if args.json:
         print(json.dumps(res, ensure_ascii=False, indent=2))
@@ -76,10 +94,16 @@ def main():
     print('扫描目录:', args.path)
     print('找到 YAML 文件数:', len(res['files']))
     print('找到字符串段数:', res['total_strings'])
-    print('总字符数:', res['total_chars'])
+    if args.only_chinese:
+        print('总中文字符数:', res['total_chars'])
+    else:
+        print('总字符数:', res['total_chars'])
     print('\n每个文件统计:')
     for f in sorted(res['files'], key=lambda x: (-x['chars'], x['file'])):
-        print(f"{f['file']}: 字符数={f['chars']}, 字符串段数={f['strings']}")
+        if args.only_chinese:
+            print(f"{f['file']}: 中文字符数={f['chars']}, 字符串段数={f['strings']}")
+        else:
+            print(f"{f['file']}: 字符数={f['chars']}, 字符串段数={f['strings']}")
 
 
 if __name__ == '__main__':

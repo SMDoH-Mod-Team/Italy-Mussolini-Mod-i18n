@@ -11,6 +11,7 @@ python scripts/count_quoted_chars.py --path localisation/simp_chinese
 选项:
 - `--path` / `-p`: 要扫描的目录，默认为当前目录。
 - `--json`: 输出 JSON 格式的机器可读结果。
+ - `--only-chinese`: 只统计被引号包裹字符串中的中文字符数（仅中文计数）。
 
 说明:
 - 脚本通过正则在文件文本中查找单引号或双引号包裹的片段，简单处理转义引号和反斜杠。
